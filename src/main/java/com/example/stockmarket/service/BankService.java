@@ -38,9 +38,6 @@ public class BankService {
         );
     }
 
-    public boolean hasStock(String stock) {
-        return redis.opsForHash().hasKey(BANK_KEY, stock);
-    }
 
     public boolean decrease(String stock) {
         Object current = redis.opsForHash().get(BANK_KEY, stock);

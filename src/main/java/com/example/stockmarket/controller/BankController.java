@@ -6,6 +6,7 @@ import com.example.stockmarket.service.BankService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.stream.Collectors;
 
 import java.util.Map;
 
@@ -15,26 +16,23 @@ public class BankController {
 
     private final BankService bankService;
 
-    public BankController(BankService b) {
-        this.bankService = b;
+    public BankController(BankService bankService) {
+        this.bankService = bankService;
     }
 
     @GetMapping
-    public Object getStocks() {
+    public Map<String, Object> getStocks() {
         return Map.of("stocks", bankService.getAllStocks());
     }
 
     @PostMapping
     public ResponseEntity<?> setStocks(@RequestBody @Valid SetStocksRequest body) {
 
-        if (body == null || body.stocks == null) {
-            return ResponseEntity.badRequest().body("stocks is null");
-        }
-
         Map<String, Integer> map = body.stocks.stream()
-                .collect(java.util.stream.Collectors.toMap(
+                .collect(Collectors.toMap(
                         s -> s.name,
-                        s -> s.quantity
+                        s -> s.quantity,
+                        (a, b) -> b
                 ));
 
         bankService.setStocks(map);

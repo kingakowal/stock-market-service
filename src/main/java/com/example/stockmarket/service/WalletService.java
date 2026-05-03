@@ -33,22 +33,4 @@ public class WalletService {
     }
 
 
-    public void increase(String walletId, String stock) {
-
-        redis.opsForHash().increment(walletKey(walletId), stock, 1);
-    }
-
-    public boolean decrease(String walletId, String stock) {
-        String key = walletKey(walletId);
-
-        Object current = redis.opsForHash().get(key, stock);
-        int qty = current == null ? 0 : Integer.parseInt(current.toString());
-
-        if (qty <= 0) {
-            return false;
-        }
-
-        redis.opsForHash().increment(key, stock, -1);
-        return true;
-    }
 }

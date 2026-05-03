@@ -1,90 +1,44 @@
 package com.example.stockmarket.controller;
 
 import com.example.stockmarket.service.*;
+import com.example.stockmarket.dto.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
-import java.util.Map;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/wallets")
 public class WalletController {
 
+    private final TradeService tradeService;
     private final WalletService walletService;
-    private final BankService bankService;
-    private final AuditService auditService;
 
-    public WalletController(WalletService walletService,
-                            BankService bankService,
-                            AuditService auditService) {
+    public WalletController(TradeService tradeService,
+                            WalletService walletService) {
+        this.tradeService = tradeService;
         this.walletService = walletService;
-        this.bankService = bankService;
-        this.auditService = auditService;
     }
 
-
-    @PostMapping("/{walletId}/stocks/{stockName}")
+    @PostMapping("/{walletId}/stocks/{stock}")
     public ResponseEntity<?> trade(
             @PathVariable String walletId,
-            @PathVariable String stockName,
-            @RequestBody Map<String, String> body
+            @PathVariable String stock,
+            @RequestBody @Valid TradeRequest request
     ) {
-
-        String type = body.get("type");
-
-        if (!bankService.hasStock(stockName)) {
-            return ResponseEntity.status(404).body("Stock does not exist in bank");
-        }
-
-        if ("buy".equalsIgnoreCase(type)) {
-
-            boolean success = bankService.decrease(stockName);
-
-            if (!success) {
-                return ResponseEntity.badRequest().body("No stock available in bank");
-            }
-
-            walletService.increase(walletId, stockName);
-
-            auditService.log("buy", walletId, stockName);
-
-            return ResponseEntity.ok().build();
-        }
-
-        if ("sell".equalsIgnoreCase(type)) {
-
-            boolean hasStock = walletService.decrease(walletId, stockName);
-
-            if (!hasStock) {
-                return ResponseEntity.badRequest().body("No stock in wallet");
-            }
-
-            bankService.increase(stockName);
-
-            auditService.log("sell", walletId, stockName);
-
-            return ResponseEntity.ok().build();
-        }
-
-        return ResponseEntity.badRequest().body("Invalid type");
+        tradeService.trade(walletId, stock, request.type);
+        return ResponseEntity.ok().build();
     }
 
     @GetMapping("/{walletId}")
-    public ResponseEntity<?> getWallet(@PathVariable String walletId) {
-
+    public ResponseEntity<WalletResponse> getWallet(@PathVariable String walletId) {
         return ResponseEntity.ok(
-                Map.of(
-                        "id", walletId,
-                        "stocks", walletService.getWallet(walletId)
-                )
+                new WalletResponse(walletId, walletService.getWallet(walletId))
         );
     }
 
-
-    @GetMapping("/{walletId}/stocks/{stockName}")
+    @GetMapping("/{walletId}/stocks/{stock}")
     public int getStock(@PathVariable String walletId,
-                        @PathVariable String stockName) {
-
-        return walletService.getStock(walletId, stockName);
+                        @PathVariable String stock) {
+        return walletService.getStock(walletId, stock);
     }
 }
